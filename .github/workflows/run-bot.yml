@@ -1,0 +1,48 @@
+name: Run Facebook Comment Bot
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub's scheduler is best-effort and can be a few
+    # minutes late during high load, but this keeps well within the free
+    # minutes budget on a private repo (2,000 min/month) — each run takes
+    # well under a minute of actual compute.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+# Needed so the workflow can commit the updated last_updated.json back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: facebook-comment-bot
+  cancel-in-progress: false   # never kill a run partway through a post/like/reply
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the bot
+        env:
+          FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python main.py
+
+      - name: Persist last_updated.json
+        run: |
+          git config user.name "facebook-comment-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add artifacts/last_updated.json
+          git diff --staged --quiet || git commit -m "chore: update last_updated timestamp"
+          git push
