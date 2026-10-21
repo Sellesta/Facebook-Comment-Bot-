@@ -11,7 +11,6 @@ Facebook comment bot is an automated system that responds to comments on your Fa
 
 
 ## Demo
-[![youtube demo video](docs/YT-image.png)](https://www.youtube.com/watch?v=4py3INBWTow)
 
 
 ## Installation
